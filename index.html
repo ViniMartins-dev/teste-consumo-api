@@ -40,19 +40,41 @@
 
   <script>
     // Cadastro de animal
-    document.getElementById('form-cadastro').addEventListener('submit', async function (e) {
-      e.preventDefault();
+    // Cadastro de animal (com montagem manual do body)
+  document.getElementById('form-cadastro').addEventListener('submit', async function (e) {
+    e.preventDefault();
 
-      const form = document.getElementById('form-cadastro');
-      const formData = new FormData(form);
+    const form = document.getElementById('form-cadastro');
+    const formElements = form.elements;
+
+    const arquivoImagem = formElements['bin_foto'].files[0];
+
+    const leitor = new FileReader();
+    leitor.onload = async function () {
+      const fotoBase64 = leitor.result; // Inclui o prefixo data:image/jpeg;base64,...
+
+      const corpo = {
+        nome: formElements['nome'].value,
+        especie: formElements['especie'].value,
+        porte: formElements['porte'].value,
+        raca: formElements['raca'].value,
+        idade: parseInt(formElements['idade'].value),
+        sexo: formElements['sexo'].value,
+        descricao: formElements['descricao'].value,
+        personalidade: formElements['personalidade'].value,
+        status: formElements['status'].value,
+        usuario_id: parseInt(formElements['usuario_id'].value),
+        fotoBase64: fotoBase64
+      };
 
       try {
         const resposta = await fetch('http://localhost:3000/animal', {
           method: 'POST',
-          body: formData,
           headers: {
-            'bearer': '000',
+            'Content-Type': 'application/json',
+            'bearer': '000'
           },
+          body: JSON.stringify(corpo)
         });
 
         if (resposta.ok) {
@@ -60,12 +82,17 @@
           form.reset();
         } else {
           const erro = await resposta.text();
-          console.log(erro);
+          console.error('Erro:', erro);
+          alert('Erro ao cadastrar animal.');
         }
       } catch (err) {
-        console.log(err);
+        console.error('Erro de conexão:', err);
+        alert('Erro de conexão.');
       }
-    });
+    };
+
+    leitor.readAsDataURL(arquivoImagem);
+  });
 
     // Filtro de animais
     document.getElementById('form-filtro').addEventListener('submit', async function (e) {
