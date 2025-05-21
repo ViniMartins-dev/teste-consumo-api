@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Cadastro e Filtro de Animais</title>
+</head>
+<body>
+  <h1>🐶 Cadastro de Animal</h1>
+  <form id="form-cadastro" enctype="multipart/form-data">
+    <input type="text" name="nome" placeholder="Nome do animal" required><br>
+    <input type="text" name="especie" placeholder="Espécie" required><br>
+    <input type="text" name="porte" placeholder="Porte" required><br>
+    <input type="text" name="raca" placeholder="Raça" required><br>
+    <input type="number" name="idade" placeholder="Idade" required><br>
+    <input type="text" name="sexo" placeholder="Sexo" required><br>
+    <textarea name="descricao" placeholder="Descrição" required></textarea><br>
+    <textarea name="personalidade" placeholder="Personalidade" required></textarea><br>
+    <input type="text" name="status" placeholder="Status (ex: disponível)" required><br>
+    <input type="number" name="usuario_id" placeholder="ID do protetor" required><br>
+    <input type="file" name="bin_foto" accept="image/*" required><br><br>
+    <button type="submit">Cadastrar Animal</button>
+  </form>
+
+  <hr>
+
+  <h2>🔎 Buscar Animais</h2>
+  <form id="form-filtro">
+    <input type="text" name="nome" placeholder="Nome (parcial)">
+    <input type="text" name="especie" placeholder="Especie">
+    <input type="text" name="raca" placeholder="Raça (separe por vírgula)">
+    <input type="text" name="sexo" placeholder="Sexo">
+    <input type="number" name="idadeMin" placeholder="Idade mínima">
+    <input type="number" name="idadeMax" placeholder="Idade máxima">
+    <input type="text" name="status" placeholder="Status">
+    <button type="submit">Buscar</button>
+  </form>
+
+  <h3>📋 Resultados:</h3>
+  <ul id="lista-animais"></ul>
+
+  <script>
+    // Cadastro de animal
+    document.getElementById('form-cadastro').addEventListener('submit', async function (e) {
+      e.preventDefault();
+
+      const form = document.getElementById('form-cadastro');
+      const formData = new FormData(form);
+
+      try {
+        const resposta = await fetch('http://localhost:3000/animal', {
+          method: 'POST',
+          body: formData,
+          headers: {
+            'bearer': '000',
+          },
+        });
+
+        if (resposta.ok) {
+          alert('Animal cadastrado com sucesso!');
+          form.reset();
+        } else {
+          const erro = await resposta.text();
+          console.log(erro);
+        }
+      } catch (err) {
+        console.log(err);
+      }
+    });
+
+    // Filtro de animais
+    document.getElementById('form-filtro').addEventListener('submit', async function (e) {
+      e.preventDefault();
+
+      const formData = new FormData(e.target);
+      const params = new URLSearchParams();
+
+      for (const [key, value] of formData.entries()) {
+        if (value.trim() !== '') {
+          if (key === 'raca') {
+            const racas = value.split(',').map(r => r.trim());
+            racas.forEach(r => params.append('raca', r));
+          } else {
+            params.append(key, value);
+          }
+        }
+      }
+
+      try {
+        const resposta = await fetch(`http://localhost:3000/animal/filtrar?${params.toString()}`);
+        const dados = await resposta.json();
+        console.log(dados);
+
+        const lista = document.getElementById('lista-animais');
+        lista.innerHTML = '';
+
+        if (dados.length === 0) {
+          lista.innerHTML = '<li>Nenhum animal encontrado.</li>';
+        } else {
+          dados.forEach(animal => {
+            const item = document.createElement('li');
+
+            // Exibe imagem se existir
+            if (animal.fotoBase64) {
+              const img = document.createElement('img');
+              img.src = animal.fotoBase64;
+              img.alt = animal.nome;
+              img.style.width = '100px';
+              img.style.height = 'auto';
+              img.style.marginRight = '10px';
+              item.appendChild(img);
+            }
+
+            const texto = document.createTextNode(
+              `${animal.nome} - ${animal.especie} - ${animal.raca} - ${animal.idade} anos - ${animal.sexo} - ${animal.status}`
+            );
+            item.appendChild(texto);
+
+            lista.appendChild(item);
+          });
+        }
+      } catch (err) {
+        alert('Erro ao buscar animais: ' + err.message);
+      }
+    });
+  </script>
+</body>
+</html>
